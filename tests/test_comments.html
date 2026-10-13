@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test Comments</title>
+    <script src="../js/fraction.js"></script>
+    <script src="../js/quantities.js"></script>
+    <script src="../js/chemistry.js"></script>
+    <script src="../js/parser.js"></script>
+    <script src="../js/comments.js"></script>
+    <script src="../js/calculator.js"></script>
+</head>
+<body>
+    <h1>Comments Test Runner</h1>
+    <pre id="output"></pre>
+    <script>
+    (function() {
+        var logElem = document.getElementById('output');
+        var passes = 0, fails = 0;
+
+        function assert(name, condition, extra) {
+            if (condition) {
+                passes++;
+                logElem.innerText += "PASS: " + name + "\n";
+            } else {
+                fails++;
+                logElem.innerText += "FAIL: " + name + (extra ? " (" + extra + ")" : "") + "\n";
+            }
+        }
+
+        try {
+            var state = new State();
+
+            // 1. Plain comment with chemical formula auto-markup
+            var comm1 = markup_comment("The concentration of CaCl2 in water is low");
+            assert("markup_comment wraps CaCl2 in clickable span", comm1.indexOf("insertAtCaret('commands','[CaCl2]'") !== -1);
+            assert("markup_comment formats \\(\\ce{CaCl2}\\)", comm1.indexOf("\\(\\ce{CaCl2}\\)") !== -1);
+
+            // 2. Chemical reaction comment (!) with generous arrow spacing
+            var script = "!2 H2 + O2 -> 2 H2O\n# Note about hydrogen\n@rho = m / V";
+            var calcRes = calc('', script);
+            assert("calc() processes !reaction", calcRes.verbose_work.indexOf('insertAtCaret(\'commands\',\'ν[H2] = -2') !== -1 || calcRes.verbose_work.indexOf('insertAtCaret(\'commands\',\'!2 H2 + O2 -> 2 H2O') !== -1);
+            assert("reaction arrow has generous spacing", calcRes.verbose_work.indexOf('&nbsp;&nbsp;') !== -1);
+            assert("calc() processes #comment", calcRes.verbose_work.indexOf('Note about hydrogen') !== -1);
+            assert("calc() processes @algebra", calcRes.verbose_work.indexOf('rho = m / V') !== -1);
+
+            // 3. Formula recognition at the end of a sentence (user screenshot case)
+            var userSentence = "I wonder whether the calculator can recognize a speed of 3.452 m/s and the indentity of the acid H2SO4.";
+            var userMarkup = markup_comment(userSentence);
+            assert("recognizes H2SO4 at end of sentence with period", userMarkup.indexOf("\\(\\ce{H2SO4}\\)</span>.") !== -1, userMarkup);
+
+            var userSentence2 = "Did we recognize H2SO4 or did we not?";
+            var userMarkup2 = markup_comment(userSentence2);
+            assert("recognizes H2SO4 in middle of sentence", userMarkup2.indexOf("\\(\\ce{H2SO4}\\)") !== -1, userMarkup2);
+
+            var userSentence3 = "We dissolved Ca(OH)2.";
+            var userMarkup3 = markup_comment(userSentence3);
+            assert("recognizes Ca(OH)2 with parens at end of sentence", userMarkup3.indexOf("\\(\\ce{Ca(OH)2}\\)</span>.") !== -1, userMarkup3);
+
+            // Summary
+            logElem.innerText += "\nTOTAL: " + passes + " PASSED, " + fails + " FAILED.\n";
+            if (fails === 0) {
+                document.title = "TESTS_ALL_PASSED";
+            } else {
+                document.title = "TESTS_FAILED";
+            }
+        } catch (e) {
+            logElem.innerText += "\nEXCEPTION: " + e.message + "\n" + e.stack;
+            document.title = "TESTS_EXCEPTION";
+        }
+    })();
+    </script>
+</body>
+</html>

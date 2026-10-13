@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="description" content="PQcalc: An offline scientific calculator for physical quantities, units, uncertainties, and chemistry equations.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="PQcalc">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#1a56db">
+
+    <title>PQcalc - Physical Quantity Calculator</title>
+
+    <link rel="icon" type="image/svg+xml" href="static/icon.svg">
+    <link rel="alternate icon" type="image/x-icon" href="static/favicon.ico">
+    <link rel="apple-touch-icon" href="static/icon.svg">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="assets/katex/katex.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Printable Header (visible only when printing) -->
+    <div class="print-header">
+        <h2>PQcalc - Physical Quantity Calculator</h2>
+        <p>Calculation logbook with units and uncertainty propagation</p>
+        <p><small>by Karsten Theis, Chemical and Physical Sciences, Westfield State University</small></p>
+    </div>
+
+    <!-- Application Top Navigation Bar -->
+    <header class="app-header">
+        <div class="brand-section">
+            <img class="brand-logo" alt="PQcalc Logo" src="data:image/gif;base64,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">
+            <div class="brand-info">
+                <h1>PQcalc</h1>
+                <p class="brand-tagline">Physical Quantity &amp; Chemistry Calculator</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button id="btn-help" class="btn btn-secondary btn-sm" title="Help &amp; Tutorials">
+                <span>📖 Tutorials</span>
+            </button>
+            <button id="btn-export" class="btn btn-secondary btn-sm" title="Printable log and LibreTexts export">
+                <span>🖨️ Export</span>
+            </button>
+            <button id="btn-reset" class="btn btn-danger btn-sm" title="Reset all calculations">
+                <span>🔄 Reset</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="app-main">
+
+        <!-- Output Card (History of calculations) -->
+        <section class="output-card" aria-label="Calculation Output">
+            <div class="card-header">
+                <span class="card-title">Calculation Work &amp; Results</span>
+            </div>
+            <div id="output-container" class="output-content">
+                <div id="welcome-box" class="welcome-box">
+                    <h3>Welcome to PQcalc</h3>
+                    <p>A scientific calculator that tracks units, uncertainties, and balances chemical reactions.</p>
+                    <div class="welcome-steps">
+                        <strong>1.</strong> Set up a problem (define quantities or formulas)<br>
+                        <strong>2.</strong> Solve it and click <strong>Go</strong> (or press Enter)<br>
+                        <strong>3.</strong> Inspect the substituted steps, units, and results
+                    </div>
+                    <div class="welcome-examples">
+                        <button class="chip-btn welcome-try-btn" data-code="d = 120 km&#10;t = 1.5 h&#10;speed = d / t&#10;speed in m/s">🚗 Speed &amp; Units</button>
+                        <button class="chip-btn welcome-try-btn" data-code="m[CaCl2] = 50.0 g&#10;n[CaCl2] = m[CaCl2] / M[CaCl2]">🧪 CaCl2 Molar Mass</button>
+                        <button class="chip-btn welcome-try-btn" data-code="! 2 H2 + O2 -&gt; 2 H2O">⚗️ Reaction Balancing</button>
+                        <button class="chip-btn welcome-try-btn" data-code="x = 10.5(2) m&#10;t = 2.0(1) s&#10;v = x / t">📏 Uncertainties</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Known Quantities Drawer -->
+        <section class="known-panel" aria-label="Known Quantities">
+            <div class="known-header">
+                <span class="known-title">Known Quantities (click to insert into formula)</span>
+            </div>
+            <div class="known-body">
+                <div id="known-chips" class="known-chips">
+                    <span class="empty-known">None defined yet</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Input Card -->
+        <section class="input-card" aria-label="Command Input">
+
+            <!-- Mobile & Touch Quick-Bar -->
+            <div class="touch-quickbar" aria-label="Math and Chemistry Quick Chips">
+                <button type="button" class="chip-btn" data-insert="+" data-backup="0">+</button>
+                <button type="button" class="chip-btn" data-insert="-" data-backup="0">-</button>
+                <button type="button" class="chip-btn" data-insert=" * " data-backup="0">×</button>
+                <button type="button" class="chip-btn" data-insert=" / " data-backup="0">÷</button>
+                <button type="button" class="chip-btn" data-insert="^" data-backup="0">^</button>
+                <button type="button" class="chip-btn" data-insert="()" data-backup="1">( )</button>
+                <button type="button" class="chip-btn" data-insert="[]" data-backup="1">[ ]</button>
+                <button type="button" class="chip-btn" data-insert=" = " data-backup="0">=</button>
+                <button type="button" class="chip-btn" data-insert=" +- " data-backup="0">±</button>
+                <button type="button" class="chip-btn" data-insert=" -&gt; " data-backup="0">→</button>
+                <button type="button" class="chip-btn" data-insert="using " data-backup="0">using</button>
+                <button type="button" class="chip-btn" data-insert="in " data-backup="0">in</button>
+                <button type="button" class="chip-btn" data-insert="M[]" data-backup="1">M[ ]</button>
+                <button type="button" class="chip-btn" data-insert="! " data-backup="0">! (reaction)</button>
+            </div>
+
+            <!-- Commands Textarea -->
+            <div class="textarea-wrapper">
+                <textarea id="commands" rows="3" placeholder="Enter commands here, e.g. mass = 5.0 kg (Enter to calculate, Shift+Enter for new line)" autocapitalize="off" autocomplete="off" spellcheck="false"></textarea>
+            </div>
+
+            <!-- Controls and Selectors -->
+            <div class="controls-row">
+                <div class="primary-actions">
+                    <button type="button" id="btn-calculate" class="btn btn-primary" title="Execute calculation (Enter)">
+                        <span>▶ Go</span>
+                    </button>
+                    <button type="button" id="btn-undo" class="btn btn-secondary" title="Undo previous calculation (or Browser Back)" disabled>
+                        <span>↶ Undo</span>
+                    </button>
+                    <button type="button" id="btn-resubmit" class="btn btn-secondary" title="Load previous calculation commands into the editor">
+                        <span>↩ Resubmit</span>
+                    </button>
+                </div>
+
+                <div class="selectors-group">
+                    <select id="select-units" class="selector-dropdown" title="Insert physical units">
+                        <option value="" disabled selected>Units</option>
+                    </select>
+
+                    <select id="select-functions" class="selector-dropdown" title="Insert mathematical functions">
+                        <option value="" disabled selected>Functions</option>
+                    </select>
+
+                    <select id="select-symbols" class="selector-dropdown" title="Insert special symbols">
+                        <option value="" disabled selected>Symbols</option>
+                    </select>
+
+                    <select id="select-constants" class="selector-dropdown" title="Insert physical constants">
+                        <option value="" disabled selected>Constants</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Export / Printable Modal -->
+    <div id="export-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="export-modal-title">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 id="export-modal-title">Calculation Export &amp; Printable Log</h2>
+                <button type="button" class="modal-close-btn" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Calculation done with PQcalc</strong>, by Karsten Theis, Westfield State University.</p>
+                <hr style="margin: 12px 0;">
+
+                <h3>Input Commands</h3>
+                <pre id="export-input-log" style="background: #f1f5f9; padding: 10px; border-radius: 6px; overflow-x: auto; font-family: monospace;"></pre>
+
+                <h3 style="margin-top: 16px;">Known Quantities</h3>
+                <pre id="export-known" style="background: #f1f5f9; padding: 10px; border-radius: 6px; overflow-x: auto; font-family: monospace;"></pre>
+
+                <h3 style="margin-top: 16px;">Log of Calculation</h3>
+                <div id="export-logbook" style="border: 1px solid #e2e8f0; padding: 12px; border-radius: 6px; background: #fff;"></div>
+
+                <h3 style="margin-top: 16px;">Formatted for LibreTexts</h3>
+                <pre id="export-libretexts" style="background: #f1f5f9; padding: 10px; border-radius: 6px; overflow-x: auto; font-family: monospace; white-space: pre-wrap;"></pre>
+
+                <h3 style="margin-top: 16px;">Shareable Link</h3>
+                <input type="text" id="export-share-link" readonly style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: monospace;">
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="btn-copy-libre" class="btn btn-secondary">Copy LibreTexts</button>
+                <button type="button" id="btn-print-export" class="btn btn-secondary">Print / PDF</button>
+                <button type="button" class="btn btn-primary modal-close-action">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help & Tutorials Modal -->
+    <div id="help-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 id="help-modal-title">PQcalc Tutorials &amp; Examples</h2>
+                <button type="button" class="modal-close-btn" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Click <strong>"Try This Example"</strong> to insert any scenario directly into your calculation workspace.</p>
+
+                <div class="tutorial-grid">
+                    <div class="tutorial-card">
+                        <h4>1. Quantities &amp; Basic Math</h4>
+                        <p>Assign quantities with names, numbers, and units. Do arithmetic naturally.</p>
+                        <pre>length = 5.0 m&#10;width = 3.2 m&#10;area = length * width</pre>
+                        <button type="button" class="btn btn-secondary btn-sm btn-try-example" data-code="length = 5.0 m&#10;width = 3.2 m&#10;area = length * width">Try This Example</button>
+                    </div>
+
+                    <div class="tutorial-card">
+                        <h4>2. Unit Conversions ('in')</h4>
+                        <p>Convert calculated results into any compatible units.</p>
+                        <pre>d = 120 km&#10;t = 1.5 h&#10;speed = d / t&#10;speed in m/s</pre>
+                        <button type="button" class="btn btn-secondary btn-sm btn-try-example" data-code="d = 120 km&#10;t = 1.5 h&#10;speed = d / t&#10;speed in m/s">Try This Example</button>
+                    </div>
+
+                    <div class="tutorial-card">
+                        <h4>3. Uncertainty Propagation</h4>
+                        <p>Enter values with uncertainties in least significant digits, e.g. <code>10.5(2)</code>. PQcalc tracks error propagation and significant figures.</p>
+                        <pre>x = 10.5(2) m&#10;t = 2.0(1) s&#10;v = x / t</pre>
+                        <button type="button" class="btn btn-secondary btn-sm btn-try-example" data-code="x = 10.5(2) m&#10;t = 2.0(1) s&#10;v = x / t">Try This Example</button>
+                    </div>
+
+                    <div class="tutorial-card">
+                        <h4>4. Chemistry &amp; Molar Masses</h4>
+                        <p>Look up molar masses with <code>M[Formula]</code> and label samples with bracketed formulas like <code>m[CaCl2]</code> and <code>n[CaCl2]</code>.</p>
+                        <pre>m[CaCl2] = 50.0 g&#10;n[CaCl2] = m[CaCl2] / M[CaCl2]</pre>
+                        <button type="button" class="btn btn-secondary btn-sm btn-try-example" data-code="m[CaCl2] = 50.0 g&#10;n[CaCl2] = m[CaCl2] / M[CaCl2]">Try This Example</button>
+                    </div>
+
+                    <div class="tutorial-card">
+                        <h4>5. Chemical Reaction Equations</h4>
+                        <p>Prefix reaction equations with <code>!</code> to check balancing and stoichiometry.</p>
+                        <pre>! 2 H2 + O2 -&gt; 2 H2O&#10;! 4Fe + 3O2 -&gt; 2Fe2O3</pre>
+                        <button type="button" class="btn btn-secondary btn-sm btn-try-example" data-code="! 2 H2 + O2 -&gt; 2 H2O&#10;! 4Fe + 3O2 -&gt; 2Fe2O3">Try This Example</button>
+                    </div>
+
+                    <div class="tutorial-card">
+                        <h4>6. Converting 'using' Relations</h4>
+                        <p>Use known relations to convert between chemical amount and mass or volume.</p>
+                        <pre>c_sol = 0.50 mol/L&#10;V_sol = 25.0 mL&#10;n_sol = c_sol * V_sol&#10;c_sol using M</pre>
+                        <button type="button" class="btn btn-secondary btn-sm btn-try-example" data-code="c_sol = 0.50 mol/L&#10;V_sol = 25.0 mL&#10;n_sol = c_sol * V_sol&#10;n_sol using mmol">Try This Example</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary modal-close-action">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts (Loaded locally, 100% offline) -->
+    <script src="assets/katex/katex.min.js"></script>
+    <script src="assets/katex/mhchem.min.js"></script>
+    <script src="assets/katex/auto-render.min.js"></script>
+
+    <script src="js/fraction.js"></script>
+    <script src="js/quantities.js"></script>
+    <script src="js/chemistry.js"></script>
+    <script src="js/parser.js"></script>
+    <script src="js/comments.js"></script>
+    <script src="js/calculator.js"></script>
+    <script src="js/app.js"></script>
+
+    <!-- Service Worker for offline PWA functionality -->
+    <script>
+        if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('sw.js').catch(function (err) {
+                    console.log('ServiceWorker registration note: ' + err.message);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

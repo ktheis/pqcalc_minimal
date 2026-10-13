@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test Parser & Calculator</title>
+    <script src="../js/fraction.js"></script>
+    <script src="../js/quantities.js"></script>
+    <script src="../js/parser.js"></script>
+    <script src="../js/calculator.js"></script>
+</head>
+<body>
+    <h1>Parser & Calculator Test Runner</h1>
+    <pre id="output"></pre>
+    <script>
+    (function() {
+        var logElem = document.getElementById('output');
+        var passes = 0, fails = 0;
+
+        function assert(name, condition, extra) {
+            if (condition) {
+                passes++;
+                logElem.innerText += "PASS: " + name + "\n";
+            } else {
+                fails++;
+                logElem.innerText += "FAIL: " + name + (extra ? " (" + extra + ")" : "") + "\n";
+            }
+        }
+
+        try {
+            var state = new State();
+
+            // 1. Basic N-U clusters
+            var q1 = interpret('3 mol/L', state);
+            assert("interpret 3 mol/L value", q1.number === 3000);
+            assert("interpret 3 mol/L str", ascii_qvalue(q1) === '3 mol/L', ascii_qvalue(q1));
+
+            var q2 = interpret('30 s + 1 min', state);
+            assert("interpret 30 s + 1 min str", ascii_qvalue(q2) === '(3 / 2) min', ascii_qvalue(q2));
+
+            var q3 = interpret('4 mol/L / 2 mol/L', state);
+            assert("interpret 4 mol/L / 2 mol/L str", ascii_qvalue(q3) === '2', ascii_qvalue(q3));
+
+            var q4 = interpret('3.5 J/(mol K)', state);
+            assert("interpret 3.5 J/(mol K) str", ascii_qvalue(q4) === '3.5 J/(mol K)', ascii_qvalue(q4));
+
+            var q5 = interpret('5.6 mmol', state);
+            assert("interpret 5.6 mmol str", ascii_qvalue(q5) === '5.6 mmol', ascii_qvalue(q5));
+
+            // 2. Math functions
+            var q_exp = interpret('exp(2)', state);
+            assert("interpret exp(2)", Math.abs(q_exp.number - Math.exp(2)) < 1e-10);
+
+            var q_sqrt = interpret('sqrt(16)', state);
+            assert("interpret sqrt(16)", q_sqrt.number === 4.0);
+
+            var q_sin = interpret('sin(0.5)', state);
+            assert("interpret sin(0.5)", Math.abs(q_sin.number - Math.sin(0.5)) < 1e-10);
+
+            // 3. Variable lookup and arithmetic
+            state.set('a', new Q(2.5, 'a', unity, 0.1));
+            var q_var = interpret('2a', state);
+            assert("interpret 2a == 5.0", q_var.number === 5.0);
+
+            var q_comb = interpret('2 * a + 4', state);
+            assert("interpret 2 * a + 4 == 9.0", q_comb.number === 9.0);
+            assert("q_comb depth == 2", q_comb.setdepth() === 2);
+
+            // 4. check_name
+            var threwUnitConflict = false;
+            try {
+                check_name('m', state);
+            } catch (e) {
+                threwUnitConflict = e.message.indexOf("already the name of a unit") !== -1;
+            }
+            assert("check_name rejects 'm' unit conflict", threwUnitConflict);
+
+            assert("check_name accepts 'mass'", check_name('mass', state) === 'mass');
+            assert("check_name accepts '[NaCl]'", check_name('[NaCl]', state) === '[NaCl]');
+
+            // 5. Full calc() execution
+            var script = "mass = 5.0 kg\na = 2.0 m/s^2\nF = mass * a";
+            var calcRes = calc('', script);
+            assert("calc() defines 3 quantities", calcRes.known.length === 3);
+            assert("calc() known contains F = 10.0", calcRes.known.some(function(k) { return k.indexOf('F = 10.0') !== -1; }));
+            assert("calc() verbose work contains task", calcRes.verbose_work.indexOf('mass') !== -1);
+            assert("calc() verbose work contains substituted work", calcRes.verbose_work.indexOf('5.0') !== -1);
+
+            // Summary
+            logElem.innerText += "\nTOTAL: " + passes + " PASSED, " + fails + " FAILED.\n";
+            if (fails === 0) {
+                document.title = "TESTS_ALL_PASSED";
+            } else {
+                document.title = "TESTS_FAILED";
+            }
+        } catch (e) {
+            logElem.innerText += "\nEXCEPTION: " + e.message + "\n" + e.stack;
+            document.title = "TESTS_EXCEPTION";
+        }
+    })();
+    </script>
+</body>
+</html>

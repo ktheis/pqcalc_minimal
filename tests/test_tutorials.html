@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test Tutorials</title>
+    <script src="../js/fraction.js"></script>
+    <script src="../js/quantities.js"></script>
+    <script src="../js/chemistry.js"></script>
+    <script src="../js/parser.js"></script>
+    <script src="../js/comments.js"></script>
+    <script src="../js/calculator.js"></script>
+</head>
+<body>
+    <h1>Tutorials Test Runner</h1>
+    <pre id="output"></pre>
+    <script>
+    (function() {
+        var logElem = document.getElementById('output');
+        var passes = 0, fails = 0;
+
+        function assert(name, condition, extra) {
+            if (condition) {
+                passes++;
+                logElem.innerText += "PASS: " + name + "\n";
+            } else {
+                fails++;
+                logElem.innerText += "FAIL: " + name + (extra ? " (" + extra + ")" : "") + "\n";
+            }
+        }
+
+        try {
+            // Tutorial 1: Speed & Units
+            var t1 = "d = 120 km\nt = 1.5 h\nspeed = d / t\nspeed in m/s";
+            var res1 = calc('', t1);
+            assert("Tutorial 1 (Speed & Units) executes with 0 errors", res1.verbose_work.indexOf('color: red') === -1);
+            assert("Tutorial 1 defines speed", res1.known.some(function(k) { return k.indexOf('speed =') !== -1; }), JSON.stringify(res1.known));
+
+            // Tutorial 2: CaCl2 Molar Mass (two-liner with sample bracket notation)
+            var t2 = "m[CaCl2] = 50.0 g\nn[CaCl2] = m[CaCl2] / M[CaCl2]";
+            var res2 = calc('', t2);
+            assert("Tutorial 2 (CaCl2 Molar Mass) executes with 0 errors", res2.verbose_work.indexOf('color: red') === -1);
+            assert("Tutorial 2 calculates n[CaCl2]", res2.known.some(function(k) { return k.indexOf('n[CaCl2] =') !== -1; }), JSON.stringify(res2.known));
+            assert("Tutorial 2 gets 0.4505 mol", res2.known.some(function(k) { return k.indexOf('0.4505 mol') !== -1; }), JSON.stringify(res2.known));
+
+            // Tutorial 3: Reaction Balancing
+            var t3 = "! 2 H2 + O2 -> 2 H2O";
+            var res3 = calc('', t3);
+            assert("Tutorial 3 (Reaction Balancing) executes with 0 errors", res3.verbose_work.indexOf('color: red') === -1);
+            assert("Tutorial 3 renders reaction with generous arrow spacing", res3.verbose_work.indexOf('&nbsp;&nbsp;') !== -1);
+
+            // Tutorial 4: Uncertainty (parenthetical notation 10.5(2) m)
+            var t4 = "x = 10.5(2) m\nt = 2.0(1) s\nv = x / t";
+            var res4 = calc('', t4);
+            assert("Tutorial 4 (Uncertainty x & t) executes with 0 errors", res4.verbose_work.indexOf('color: red') === -1);
+            assert("Tutorial 4 propagates uncertainty for v", res4.known.some(function(k) { return k.indexOf('v = 5.2 m/s') !== -1 || k.indexOf('v = 5.3 m/s') !== -1; }), JSON.stringify(res4.known));
+
+            // Tutorial 5: Density with uncertainty in least significant digits (15.2(3) g)
+            var t5 = "m_ = 15.2(3) g\nV_ = 5.6(2) mL\ndensity = m_ / V_";
+            var res5 = calc('', t5);
+            assert("Tutorial 5 (Density with uncertainty) executes with 0 errors", res5.verbose_work.indexOf('color: red') === -1);
+            assert("Tutorial 5 calculates density with uncertainty", res5.known.some(function(k) { return k.indexOf('density = 2.7 g/mL') !== -1; }), JSON.stringify(res5.known));
+
+            // Summary
+            logElem.innerText += "\nTOTAL: " + passes + " PASSED, " + fails + " FAILED.\n";
+            if (fails === 0) {
+                document.title = "TESTS_ALL_PASSED";
+            } else {
+                document.title = "TESTS_FAILED";
+            }
+        } catch(e) {
+            logElem.innerText += "\nEXCEPTION: " + e.message + "\n" + e.stack;
+            document.title = "TESTS_EXCEPTION";
+        }
+    })();
+    </script>
+</body>
+</html>

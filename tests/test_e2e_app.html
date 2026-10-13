@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>E2E App Test Runner</title>
+    <link rel="stylesheet" href="../assets/katex/katex.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div id="test-fixture" style="opacity: 0.1; height: 100px; overflow: hidden;">
+        <!-- Fixture elements matching index.html -->
+        <header class="app-header">
+            <button id="btn-help"></button>
+            <button id="btn-export"></button>
+            <button id="btn-reset"></button>
+        </header>
+        <div id="output-container">
+            <div id="welcome-box"></div>
+        </div>
+        <div id="known-chips"></div>
+        <div class="touch-quickbar">
+            <button class="chip-btn" data-insert="+" data-backup="0">+</button>
+            <button class="chip-btn" data-insert="()" data-backup="1">()</button>
+        </div>
+        <textarea id="commands"></textarea>
+        <button id="btn-calculate"></button>
+        <button id="btn-undo"></button>
+        <button id="btn-resubmit"></button>
+
+        <select id="select-units"><option value="" disabled selected>Units</option></select>
+        <select id="select-functions"><option value="" disabled selected>Functions</option></select>
+        <select id="select-symbols"><option value="" disabled selected>Symbols</option></select>
+        <select id="select-constants"><option value="" disabled selected>Constants</option></select>
+
+        <div id="export-modal" class="modal-overlay">
+            <pre id="export-input-log"></pre>
+            <pre id="export-known"></pre>
+            <div id="export-logbook"></div>
+            <pre id="export-libretexts"></pre>
+            <input id="export-share-link">
+            <button id="btn-copy-libre"></button>
+            <button id="btn-print-export"></button>
+        </div>
+        <div id="help-modal" class="modal-overlay"></div>
+    </div>
+
+    <h1>PQcalc E2E Test Suite</h1>
+    <pre id="test-results"></pre>
+
+    <script src="../assets/katex/katex.min.js"></script>
+    <script src="../assets/katex/mhchem.min.js"></script>
+    <script src="../assets/katex/auto-render.min.js"></script>
+
+    <script src="../js/fraction.js"></script>
+    <script src="../js/quantities.js"></script>
+    <script src="../js/chemistry.js"></script>
+    <script src="../js/parser.js"></script>
+    <script src="../js/comments.js"></script>
+    <script src="../js/calculator.js"></script>
+    <script src="../js/app.js"></script>
+
+    <script>
+    window.addEventListener('DOMContentLoaded', function() {
+        var resultsElem = document.getElementById('test-results');
+        var passes = 0, fails = 0;
+
+        function assert(name, condition, extra) {
+            if (condition) {
+                passes++;
+                resultsElem.innerText += "PASS: " + name + "\n";
+            } else {
+                fails++;
+                resultsElem.innerText += "FAIL: " + name + (extra ? " (" + extra + ")" : "") + "\n";
+            }
+        }
+
+        try {
+            // Test 1: Dropdown population
+            var unitSelect = document.getElementById('select-units');
+            assert("Units dropdown populated", unitSelect.options.length === 32, "Options count: " + unitSelect.options.length);
+
+            var funcSelect = document.getElementById('select-functions');
+            assert("Functions dropdown populated", funcSelect.options.length >= 10, "Options count: " + funcSelect.options.length);
+
+            var constSelect = document.getElementById('select-constants');
+            assert("Constants dropdown populated", constSelect.options.length === 8); // 1 placeholder + 7 constants
+
+            // Test 2: Caret insertion
+            var cmdArea = document.getElementById('commands');
+            cmdArea.value = '';
+            window.insertAtCaret('commands', 'test()', 1);
+            assert("insertAtCaret with backup moves cursor", cmdArea.value === 'test()' && cmdArea.selectionStart === 5);
+
+            // Test 3: Basic calculation execution via UI
+            cmdArea.value = "d = 100 km\nt = 2 h\nv = d / t\nv in m/s";
+            var calcBtn = document.getElementById('btn-calculate');
+            calcBtn.click();
+
+            var outContainer = document.getElementById('output-container');
+            assert("Output contains calculation step", outContainer.querySelectorAll('.calc-step').length === 1);
+            assert("KaTeX rendered elements exist in output", outContainer.querySelectorAll('.katex').length > 0);
+
+            var knownChips = document.getElementById('known-chips');
+            assert("Known chips contain 'v'", knownChips.innerText.indexOf('v') !== -1);
+            assert("Input textarea cleared after calculation", cmdArea.value === '');
+
+            // Test 4: Chemistry calculation & Reaction equation
+            cmdArea.value = "! 2 H2 + O2 -> 2 H2O\nmH2O = M[H2O]";
+            calcBtn.click();
+            assert("Output contains second step", outContainer.querySelectorAll('.calc-step').length === 2);
+            assert("Known quantities contains mH2O", knownChips.innerText.indexOf('mH2O') !== -1);
+            assert("mH2O is 18.015 g/mol", knownChips.innerText.indexOf('18.015 g/mol') !== -1);
+
+            // Test 4b: Multi-step Undo functionality
+            var undoBtn = document.getElementById('btn-undo');
+            assert("Undo button is enabled with history", undoBtn.disabled === false);
+
+            undoBtn.click();
+            assert("Undo removes last calculation step", outContainer.querySelectorAll('.calc-step').length === 1);
+            assert("Undo reverts known quantities", knownChips.innerText.indexOf('mH2O') === -1 && knownChips.innerText.indexOf('v') !== -1);
+            assert("Undo restores undone command to textarea", cmdArea.value.indexOf('! 2 H2 + O2') !== -1);
+            assert("Undo button remains enabled with remaining steps", undoBtn.disabled === false);
+
+            // Re-run the chemistry command so subsequent tests proceed normally
+            calcBtn.click();
+            assert("Re-calculation after undo works", outContainer.querySelectorAll('.calc-step').length === 2);
+
+            // Test 5: Resubmit button
+            var resubmitBtn = document.getElementById('btn-resubmit');
+            resubmitBtn.click();
+            assert("Resubmit restores input commands", cmdArea.value.indexOf('d = 100 km') !== -1 && cmdArea.value.indexOf('! 2 H2 + O2') !== -1);
+
+            // Test 6: Export modal
+            var exportBtn = document.getElementById('btn-export');
+            exportBtn.click();
+            var expLog = document.getElementById('export-input-log');
+            assert("Export input log populated", expLog.textContent.indexOf('d = 100 km') !== -1);
+
+            var expLibre = document.getElementById('export-libretexts');
+            assert("Export LibreTexts populated", expLibre.textContent.length > 0);
+
+            var shareLink = document.getElementById('export-share-link');
+            assert("Shareable prefill link generated", shareLink.value.indexOf('prefill=') !== -1);
+
+            // Test 7: Reset functionality
+            var resetBtn = document.getElementById('btn-reset');
+            // Mock confirm
+            var origConfirm = window.confirm;
+            window.confirm = function() { return true; };
+            resetBtn.click();
+            window.confirm = origConfirm;
+
+            assert("Reset clears output steps", outContainer.querySelectorAll('.calc-step').length === 0);
+            assert("Reset clears known chips", knownChips.querySelectorAll('.known-chip').length === 0);
+            assert("Reset clears commands textarea", cmdArea.value === '');
+            assert("Reset disables undo button", undoBtn.disabled === true);
+
+            // Summary
+            resultsElem.innerText += "\nTOTAL: " + passes + " PASSED, " + fails + " FAILED.\n";
+            if (fails === 0) {
+                document.title = "TESTS_ALL_PASSED";
+            } else {
+                document.title = "TESTS_FAILED";
+            }
+        } catch (e) {
+            resultsElem.innerText += "\nEXCEPTION: " + e.message + "\n" + e.stack;
+            document.title = "TESTS_EXCEPTION";
+        }
+    });
+    </script>
+</body>
+</html>

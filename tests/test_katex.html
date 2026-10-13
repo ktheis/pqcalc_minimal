@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test KaTeX Offline Rendering</title>
+    <link rel="stylesheet" href="../assets/katex/katex.min.css">
+    <script src="../assets/katex/katex.min.js"></script>
+    <script src="../assets/katex/mhchem.min.js"></script>
+    <script src="../assets/katex/auto-render.min.js"></script>
+</head>
+<body>
+    <h1>KaTeX Offline Test</h1>
+    <div id="test-math">
+        Formula 1: \( x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a} \)
+        Formula 2: \( \ce{2 H2 + O2 -> 2 H2O} \)
+        Formula 3: \( m_{\text{CaCl}_2} = 110.98\ \text{g/mol} \)
+    </div>
+    <pre id="output"></pre>
+    <script>
+        var logElem = document.getElementById('output');
+        try {
+            renderMathInElement(document.getElementById('test-math'), {
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "\\[", right: "\\]", display: true},
+                    {left: "\\(", right: "\\)", display: false}
+                ],
+                throwOnError: false
+            });
+            var katexElements = document.querySelectorAll('.katex');
+            if (katexElements.length >= 3) {
+                logElem.innerText = "PASS: KaTeX rendered " + katexElements.length + " expressions offline!";
+            } else {
+                logElem.innerText = "FAIL: Expected at least 3 katex elements, got " + katexElements.length;
+            }
+        } catch (e) {
+            logElem.innerText = "FAIL: Error rendering KaTeX: " + e.message;
+        }
+    </script>
+</body>
+</html>

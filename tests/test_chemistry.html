@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test Chemistry Module</title>
+    <script src="../js/fraction.js"></script>
+    <script src="../js/quantities.js"></script>
+    <script src="../js/chemistry.js"></script>
+    <script src="../js/parser.js"></script>
+    <script src="../js/calculator.js"></script>
+</head>
+<body>
+    <h1>Chemistry Module Test Runner</h1>
+    <pre id="output"></pre>
+    <script>
+    (function() {
+        var logElem = document.getElementById('output');
+        var passes = 0, fails = 0;
+
+        function assert(name, condition, extra) {
+            if (condition) {
+                passes++;
+                logElem.innerText += "PASS: " + name + "\n";
+            } else {
+                fails++;
+                logElem.innerText += "FAIL: " + name + (extra ? " (" + extra + ")" : "") + "\n";
+            }
+        }
+
+        try {
+            // 1. Periodic Table checks (118 elements)
+            assert("PSE has 118 elements", Object.keys(PSE).length === 118, "found: " + Object.keys(PSE).length);
+            assert("PSE H is 1.008", PSE['H'][0] === '1.008');
+            assert("PSE He is 4.002602(2)", PSE['He'][0] === '4.002602(2)');
+            assert("PSE Og is 294.", PSE['Og'][0] === '294.');
+
+            // 2. Molar mass calculations
+            var m_H2O = molar_mass('H2O');
+            assert("molar_mass('H2O') == 18.015 g/mol", ascii_qvalue(m_H2O) === '18.015 g/mol', ascii_qvalue(m_H2O));
+
+            var m_MgCl2 = molar_mass('MgCl2');
+            assert("molar_mass('MgCl2') == 95.21 g/mol", ascii_qvalue(m_MgCl2) === '95.21 g/mol', ascii_qvalue(m_MgCl2));
+
+            var m_CaOH2 = molar_mass('Ca(OH)2');
+            assert("molar_mass('Ca(OH)2') == 74.092 g/mol", ascii_qvalue(m_CaOH2) === '74.092 g/mol', ascii_qvalue(m_CaOH2));
+
+            var m_Fe2O3 = molar_mass('Fe2O3');
+            assert("molar_mass('Fe2O3') == 159.687 g/mol", ascii_qvalue(m_Fe2O3) === '159.687 g/mol', ascii_qvalue(m_Fe2O3));
+
+            var m_NaCl = molar_mass('NaCl');
+            assert("molar_mass('NaCl') == 58.44 g/mol", ascii_qvalue(m_NaCl) === '58.44 g/mol', ascii_qvalue(m_NaCl));
+
+            // 3. Reaction equations & balancing
+            var eq1 = interpret_equation('2 H2 + O2 -> 2 H2O');
+            assert("2 H2 + O2 -> 2 H2O is balanced", balancing_issues(eq1[0]) === false);
+
+            var eq2 = interpret_equation('H2 + O2 -> H2O');
+            var issues2 = balancing_issues(eq2[0]);
+            assert("H2 + O2 -> H2O has issues", Array.isArray(issues2) && issues2.indexOf('O') !== -1);
+
+            // 4. Reaction comparison
+            var eq3 = interpret_equation('4 H2 + 2 O2 -> 4 H2O');
+            var compRes = compare_reactions(eq1, eq3);
+            assert("compare_reactions detects common factor (score 90)", compRes[0] === 90);
+
+            // 5. Pronounce and names
+            assert("chemname('NaCl') == 'sodium chloride'", chemname('NaCl') === 'sodium chloride');
+            assert("pronounce('M[NaCl]') mentions sodium chloride", pronounce('M[NaCl]').indexOf('sodium chloride') !== -1);
+            assert("pronounce('F') == 'force'", pronounce('F') === 'force');
+
+            // 6. Integration through calc(): M[H2O] evaluated in script
+            var script = "mH2O = M[H2O]";
+            var calcRes = calc('', script);
+            assert("calc() handles M[H2O]", calcRes.known.some(function(k) { return k.indexOf('18.015 g/mol') !== -1; }));
+
+            // Summary
+            logElem.innerText += "\nTOTAL: " + passes + " PASSED, " + fails + " FAILED.\n";
+            if (fails === 0) {
+                document.title = "TESTS_ALL_PASSED";
+            } else {
+                document.title = "TESTS_FAILED";
+            }
+        } catch (e) {
+            logElem.innerText += "\nEXCEPTION: " + e.message + "\n" + e.stack;
+            document.title = "TESTS_EXCEPTION";
+        }
+    })();
+    </script>
+</body>
+</html>

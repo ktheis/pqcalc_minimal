@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test Quantities.js</title>
+    <script src="../js/fraction.js"></script>
+    <script src="../js/quantities.js"></script>
+</head>
+<body>
+    <h1>Quantities.js Test Runner</h1>
+    <pre id="output"></pre>
+    <script>
+    (function() {
+        var logElem = document.getElementById('output');
+        var passes = 0, fails = 0;
+
+        function assert(name, condition, extra) {
+            if (condition) {
+                passes++;
+                logElem.innerText += "PASS: " + name + "\n";
+            } else {
+                fails++;
+                logElem.innerText += "FAIL: " + name + (extra ? " (" + extra + ")" : "") + "\n";
+            }
+        }
+
+        try {
+            // 1. Units & unity
+            var u1 = new Units({ kg: 1, m: 1, s: -2 });
+            var u2 = new Units(0, 1, 1, -2, 0, 0, 0, 0);
+            assert("Units equality", u1.equals(u2));
+            assert("unity isUnity", unity.isUnity());
+            assert("u1 not unity", !u1.isUnity());
+
+            // 2. number2quantity
+            var n1 = number2quantity('4.513');
+            assert("number2quantity 4.513 value", n1.number === 4.513);
+            assert("number2quantity 4.513 uncert", Math.abs(n1.uncert - 0.001) < 1e-9);
+
+            var n2 = number2quantity('1000.');
+            assert("number2quantity 1000. value", n2.number === 1000.0);
+            assert("number2quantity 1000. uncert", n2.uncert === 1.0);
+
+            var n3 = number2quantity('4.53(7)');
+            assert("number2quantity 4.53(7) value", n3.number === 4.53);
+            assert("number2quantity 4.53(7) uncert", Math.abs(n3.uncert - 0.07) < 1e-9);
+
+            var n4 = number2quantity('1/2');
+            assert("number2quantity 1/2 value", n4.number.toNumber() === 0.5);
+
+            // 3. sigfig
+            assert("sigfig(4, 0.0) == 100", sigfig(4, 0.0) === 100);
+            assert("sigfig(12.56, 0.04) == 4", sigfig(12.56, 0.04) === 4);
+            assert("sigfig(5.6, 0.1) == 2", sigfig(5.6, 0.1) === 2);
+
+            // 4. ascii_number
+            assert("ascii_number(0.000563, 3) == '5.63e-4'", ascii_number(0.000563, 3) === '5.63e-4', ascii_number(0.000563, 3));
+            assert("ascii_number(4.713, 4) == '4.713'", ascii_number(4.713, 4) === '4.713', ascii_number(4.713, 4));
+
+            // 5. latex_name
+            assert("latex_name('m0') == 'm_{\\mathrm{0}}'", latex_name('m0') === 'm_{\\mathrm{0}}', latex_name('m0'));
+            assert("latex_name('s_15') == 's_{\\mathrm{15}}'", latex_name('s_15') === 's_{\\mathrm{15}}', latex_name('s_15'));
+            assert("latex_name('[NaCl]') == '[\\ce{NaCl}]'", latex_name('[NaCl]') === '[\\ce{NaCl}]', latex_name('[NaCl]'));
+            assert("latex_name('m_sample') == 'm_{\\mathrm{sample}}'", latex_name('m_sample') === 'm_{\\mathrm{sample}}', latex_name('m_sample'));
+
+            // 6. Q arithmetic (F = m * a)
+            var q_m = new Q(5.0, 'mass', new Units({ kg: 1 }), 0.1, ['kg']);
+            var q_a = new Q(2.0, 'a', new Units({ m: 1, s: -2 }), 0.05, ['m', 's']);
+            var q_F = q_m.mul(q_a);
+            assert("q_F number == 10", q_F.number === 10.0);
+            assert("q_F uncert ~0.3201", Math.abs(q_F.uncert - 0.32015621187164245) < 1e-6);
+            assert("q_F units kg m / s^2", q_F.units.equals(new Units({ kg: 1, m: 1, s: -2 })));
+
+            var latex_F = latex_writer(q_F, true, 0, new Set());
+            assert("q_F latex formatting", latex_F === "10.0\\  \\frac{\\mathrm{kg}\\ \\mathrm{m}}{\\mathrm{s}^{2}}", latex_F);
+
+            // 7. Q.steps()
+            q_F.setdepth();
+            var latex_subs = {
+                "%s / %s": "\\dfrac{%s}{%s}",
+                "%s * %s": "%s \\cdot %s",
+                "%s ^ %s": "{%s}^{%s}"
+            };
+            var step_task = q_F.steps(-1, latex_writer, latex_subs);
+            var step_work = q_F.steps(1, latex_writer, latex_subs);
+            var step_val = q_F.steps(0, latex_writer, latex_subs);
+
+            assert("step_task == 'mass \\cdot a'", step_task === "\\mathrm{mass} \\cdot a", step_task);
+            assert("step_val == '10.0\\  \\frac{\\mathrm{kg}\\ \\mathrm{m}}{\\mathrm{s}^{2}}'", step_val === "10.0\\  \\frac{\\mathrm{kg}\\ \\mathrm{m}}{\\mathrm{s}^{2}}", step_val);
+
+            // 8. Math functions
+            var q_deg = new Q(1.0);
+            var q_s = qfunc('sin', q_deg);
+            assert("qfunc('sin', 1) ~ 0.84147", Math.abs(q_s.number - Math.sin(1.0)) < 1e-10);
+
+            var q_root = qfunc('sqrt', new Q(9.0));
+            assert("qfunc('sqrt', 9) == 3", q_root.number === 3.0);
+
+            // Summary
+            logElem.innerText += "\nTOTAL: " + passes + " PASSED, " + fails + " FAILED.\n";
+            if (fails === 0) {
+                document.title = "TESTS_ALL_PASSED";
+            } else {
+                document.title = "TESTS_FAILED";
+            }
+        } catch (e) {
+            logElem.innerText += "\nEXCEPTION: " + e.message + "\n" + e.stack;
+            document.title = "TESTS_EXCEPTION";
+        }
+    })();
+    </script>
+</body>
+</html>
